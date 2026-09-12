@@ -89,7 +89,8 @@ DESCRIBE countries;
 
 -- 4.2 Review all countries covered by the dataset
 SELECT *
-FROM countries;
+FROM countries
+LIMIT 10;
 
 
 -- 4.3 Count the number of distinct regions
