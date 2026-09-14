@@ -52,7 +52,8 @@ pharmaceutical-data-quality-sql/
 ├── sql/
 │   ├── 00_database_setup.sql
 │   ├── 01_data_exploration.sql
-│   └── 02_foundation_queries.sql
+│   ├── 02_foundation_queries.sql
+│   └── 03_joins_and_business_analysis.sql
 ├── .gitignore
 └── README.md
 ```
@@ -65,7 +66,7 @@ pharmaceutical-data-quality-sql/
 - [x] Explored all eight tables
 - [x] Identified initial potential data-quality issues
 - [x] Completed foundational SQL analysis
-- [ ] Complete JOIN and business analysis
+- [x] Completed JOIN and business analysis
 - [ ] Perform data-quality validation
 - [ ] Compare staging data with master data
 - [ ] Create the final exception report
@@ -83,6 +84,23 @@ The foundational SQL analysis includes:
 - Calculating date differences with `DATEDIFF`
 - Creating date ranges with `DATE_ADD` and `BETWEEN`
 - Limiting query results with `LIMIT`
+
+## JOIN and Business Analysis Topics
+
+The JOIN and business analysis section includes:
+
+- Combining customer and country data
+- Counting approved product registrations by country
+- Identifying products without an approved registration
+- Calculating gross and net revenue
+- Aggregating delivered revenue by country
+- Identifying top customers by net revenue
+- Comparing monthly order volumes
+- Detecting sales made without an approved product registration
+- Detecting mismatches between ordered products and batch products
+- Using `INNER JOIN` and `LEFT JOIN`
+- Joining tables with multiple matching conditions
+- Using `COALESCE` to handle missing values
 
 ## Key Data-Quality Areas
 
