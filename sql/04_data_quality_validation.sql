@@ -64,3 +64,108 @@ WHERE spu.country_code IS NOT NULL
 ORDER BY spu.staging_id;
 
 
+
+-- 23. Find inconsistent casing or surrounding spaces
+SELECT
+    staging_id,
+    source_product_name,
+
+    CASE
+        WHEN CAST(source_product_name AS BINARY)
+             <> CAST(TRIM(source_product_name) AS BINARY)
+            THEN 'SURROUNDING SPACES'
+
+        WHEN CAST(source_product_name AS BINARY)
+             <> CAST(
+                    CONCAT(
+                        UPPER(LEFT(TRIM(source_product_name), 1)),
+                        LOWER(SUBSTRING(TRIM(source_product_name), 2))
+                    ) AS BINARY
+                )
+            THEN 'CASING ISSUE'
+
+        ELSE 'OK'
+    END AS product_name_quality,
+
+    source_status,
+
+    CASE
+        WHEN CAST(source_status AS BINARY)
+             <> CAST(TRIM(source_status) AS BINARY)
+            THEN 'SURROUNDING SPACES'
+
+        WHEN CAST(source_status AS BINARY)
+             <> CAST(
+                    CONCAT(
+                        UPPER(LEFT(TRIM(source_status), 1)),
+                        LOWER(SUBSTRING(TRIM(source_status), 2))
+                    ) AS BINARY
+                )
+            THEN 'CASING ISSUE'
+
+        ELSE 'OK'
+    END AS status_quality
+
+FROM staging_product_updates
+
+WHERE
+       CAST(source_product_name AS BINARY)
+       <> CAST(TRIM(source_product_name) AS BINARY)
+
+    OR CAST(source_product_name AS BINARY)
+       <> CAST(
+              CONCAT(
+                  UPPER(LEFT(TRIM(source_product_name), 1)),
+                  LOWER(SUBSTRING(TRIM(source_product_name), 2))
+              ) AS BINARY
+          )
+
+    OR CAST(source_status AS BINARY)
+       <> CAST(TRIM(source_status) AS BINARY)
+
+    OR CAST(source_status AS BINARY)
+       <> CAST(
+              CONCAT(
+                  UPPER(LEFT(TRIM(source_status), 1)),
+                  LOWER(SUBSTRING(TRIM(source_status), 2))
+              ) AS BINARY
+          );
+	
+	
+    
+-- 24. Find product-name mismatches between staging and master data
+SELECT
+    spu.staging_id,
+    spu.source_product_id,
+    spu.source_product_name AS staging_product_name,
+    p.product_name AS master_product_name
+FROM staging_product_updates AS spu
+INNER JOIN products AS p
+    ON spu.source_product_id = p.product_id
+WHERE LOWER(TRIM(spu.source_product_name))
+      <> LOWER(TRIM(p.product_name));
+
+
+
+-- 25. Find staging records marked Active
+-- while the master product is Discontinued
+SELECT
+    spu.staging_id,
+    spu.source_product_id,
+    spu.source_product_name,
+    spu.source_status AS staging_status,
+    p.product_status AS master_status
+FROM staging_product_updates AS spu
+INNER JOIN products AS p
+    ON spu.source_product_id = p.product_id
+WHERE LOWER(TRIM(spu.source_status)) = 'active'
+  AND p.product_status = 'Discontinued';
+
+
+
+
+
+   
+	
+
+
