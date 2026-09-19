@@ -26,6 +26,7 @@ HAVING COUNT(*) > 1;
 
 
 
+
 -- 20. Find staging rows with a missing product ID, therapeutic area, or status
 SELECT
     staging_id,
@@ -36,6 +37,7 @@ FROM staging_product_updates
 WHERE source_product_id IS NULL
    OR therapeutic_area IS NULL
    OR source_status IS NULL;
+
 
 
 
@@ -51,6 +53,7 @@ WHERE spu.source_product_id IS NOT NULL
 
 
 
+
 -- 22. Find invalid country codes in staging data
 SELECT
     spu.staging_id,
@@ -62,6 +65,7 @@ LEFT JOIN countries AS c
 WHERE spu.country_code IS NOT NULL
   AND c.country_code IS NULL
 ORDER BY spu.staging_id;
+
 
 
 
@@ -133,6 +137,7 @@ WHERE
 	
 	
     
+    
 -- 24. Find product-name mismatches between staging and master data
 SELECT
     spu.staging_id,
@@ -144,6 +149,7 @@ INNER JOIN products AS p
     ON spu.source_product_id = p.product_id
 WHERE LOWER(TRIM(spu.source_product_name))
       <> LOWER(TRIM(p.product_name));
+
 
 
 
@@ -164,8 +170,130 @@ WHERE LOWER(TRIM(spu.source_status)) = 'active'
 
 
 
+-- 26. Produce a data-quality summary
+SELECT
+    COUNT(*) AS total_rows,
 
-   
+    SUM(
+        CASE
+            WHEN spu.source_product_id IS NULL 
+            THEN 1
+            ELSE 0
+        END
+    ) AS missing_ids,
+
+    SUM(
+        CASE
+            WHEN spu.country_code IS NOT NULL
+             AND c.country_code IS NULL
+            THEN 1
+            ELSE 0
+        END
+    ) AS invalid_countries,
+
+    SUM(
+        CASE
+            WHEN spu.source_product_id IS NOT NULL
+             AND p.product_id IS NULL
+            THEN 1
+            ELSE 0
+        END
+    ) AS unknown_products,
+
+    (
+        SELECT
+            COALESCE(
+                SUM(d.duplicate_count - 1),
+                0
+            )
+        FROM (
+            SELECT
+                COUNT(*) AS duplicate_count
+            FROM staging_product_updates
+            GROUP BY
+                source_product_id,
+                source_product_name,
+                therapeutic_area,
+                country_code,
+                source_status,
+                loaded_at
+            HAVING COUNT(*) > 1
+        ) AS d
+    ) AS duplicate_records
+
+FROM staging_product_updates AS spu
+
+LEFT JOIN countries AS c
+    ON spu.country_code = c.country_code
+
+LEFT JOIN products AS p
+    ON spu.source_product_id = p.product_id;
+
+
+
+
+-- 27. Calculate completeness percentage
+-- for each nullable staging field
+SELECT
+    ROUND(
+COUNT(source_product_id) * 100.0 / COUNT(*),
+        2
+    ) AS product_id_completeness,
+
+    ROUND(
+        COUNT(source_product_name) * 100.0 / COUNT(*),
+        2
+    ) AS product_name_completeness,
+
+    ROUND(
+        COUNT(therapeutic_area) * 100.0 / COUNT(*),
+        2
+    ) AS therapeutic_area_completeness,
+
+    ROUND(
+        COUNT(country_code) * 100.0 / COUNT(*),
+        2
+    ) AS country_code_completeness,
+
+    ROUND(
+        COUNT(source_status) * 100.0 / COUNT(*),
+        2
+    ) AS status_completeness
+
+FROM staging_product_updates;
+
+
+
+
+-- 28. Assign each staging row a quality status of PASS or FAIL
+SELECT
+    spu.staging_id,
+    spu.source_product_id,
+    spu.source_product_name,
+    spu.therapeutic_area,
+    spu.country_code,
+    spu.source_status,
+
+    CASE
+        WHEN spu.source_product_id IS NULL
+          OR spu.therapeutic_area IS NULL
+          OR spu.country_code IS NULL
+          OR spu.source_status IS NULL
+          OR p.product_id IS NULL
+          OR c.country_code IS NULL
+        THEN 'FAIL'
+        ELSE 'PASS'
+    END AS quality_status
+
+FROM staging_product_updates AS spu
+
+LEFT JOIN products AS p
+    ON spu.source_product_id = p.product_id
+
+LEFT JOIN countries AS c
+    ON spu.country_code = c.country_code
+
+ORDER BY spu.staging_id;
+
+
 	
-
-
