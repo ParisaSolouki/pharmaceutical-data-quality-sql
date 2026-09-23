@@ -37,3 +37,38 @@ SELECT
 FROM staging_product_updates
 
 ORDER BY staging_id;
+
+
+
+
+-- 32. Review all staging products and suggest
+-- master values where a valid product match exists
+
+SELECT
+    spu.staging_id,
+    spu.source_product_id,
+
+    spu.source_product_name AS staging_product_name,
+    p.product_name AS master_product_name,
+
+    CASE
+        WHEN p.product_id IS NOT NULL
+        THEN p.product_name
+        ELSE NULL
+    END AS suggested_product_name,
+
+    spu.therapeutic_area AS staging_therapeutic_area,
+    p.therapeutic_area AS master_therapeutic_area,
+
+    CASE
+        WHEN p.product_id IS NOT NULL
+        THEN p.therapeutic_area
+        ELSE NULL
+    END AS suggested_therapeutic_area
+
+FROM staging_product_updates AS spu
+
+LEFT JOIN products AS p
+    ON spu.source_product_id = p.product_id
+
+ORDER BY spu.staging_id;
