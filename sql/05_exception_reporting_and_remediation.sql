@@ -133,7 +133,88 @@ LEFT JOIN countries AS c
 
 ORDER BY spu.staging_id;
 	
-	
-	
-	
-	
+
+
+
+
+-- 34. Summarize the number and percentage
+-- of records assigned to each remediation action
+
+WITH remediation_results AS (
+
+    SELECT
+        spu.staging_id,
+
+        CASE
+            -- Missing or invalid reference data
+            WHEN spu.source_product_id IS NULL
+              OR spu.source_product_name IS NULL
+              OR spu.therapeutic_area IS NULL
+              OR spu.country_code IS NULL
+              OR spu.source_status IS NULL
+              OR p.product_id IS NULL
+              OR c.country_code IS NULL
+            THEN 'MANUAL REVIEW'
+
+            -- Product name differs from master
+            WHEN CAST(TRIM(spu.source_product_name) AS BINARY)
+                 <> CAST(p.product_name AS BINARY)
+            THEN 'STANDARDIZE'
+
+            -- Therapeutic area differs from master
+            WHEN CAST(TRIM(spu.therapeutic_area) AS BINARY)
+                 <> CAST(p.therapeutic_area AS BINARY)
+            THEN 'STANDARDIZE'
+
+            -- Status contains spaces or inconsistent casing
+            WHEN CAST(spu.source_status AS BINARY)
+                 <> CAST(
+                        CONCAT(
+                            UPPER(
+                                LEFT(
+                                    TRIM(spu.source_status),
+                                    1
+                                )
+                            ),
+                            LOWER(
+                                SUBSTRING(
+                                    TRIM(spu.source_status),
+                                    2
+                                )
+                            )
+                        )
+                        AS BINARY
+                    )
+            THEN 'STANDARDIZE'
+
+            ELSE 'ACCEPT'
+        END AS remediation_action
+
+    FROM staging_product_updates AS spu
+
+    LEFT JOIN products AS p
+        ON spu.source_product_id = p.product_id
+
+    LEFT JOIN countries AS c
+        ON spu.country_code = c.country_code
+)
+
+SELECT
+    remediation_action,
+
+    COUNT(*) AS record_count,
+
+    ROUND(
+        COUNT(*) * 100.0
+        / (
+            SELECT COUNT(*)
+            FROM remediation_results
+        ),
+        2
+    ) AS percentage
+
+FROM remediation_results
+
+GROUP BY remediation_action
+
+ORDER BY record_count DESC;	
