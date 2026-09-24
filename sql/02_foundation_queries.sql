@@ -1,13 +1,21 @@
--- ==========================================================
--- Pharmaceutical Data Quality Analysis
+-- ============================================================
+-- Pharmaceutical Data Quality Analysis with SQL
 -- Section 2: Foundation SQL Queries
--- ==========================================================
+-- Dataset: Synthetic Pharmaceutical Data
+-- ============================================================
+
+
+-- ============================================================
+-- SELECT DATABASE
+-- ============================================================
 
 USE pharma_steward_practice;
 
 
-
+-- ============================================================
 -- 1. Return all active products, sorted alphabetically
+-- ============================================================
+
 SELECT
     product_name,
     product_status
@@ -16,39 +24,55 @@ WHERE product_status = 'Active'
 ORDER BY product_name ASC;
 
 
-
+-- ============================================================
 -- 2. Show the distinct therapeutic areas
-SELECT DISTINCT therapeutic_area
+-- ============================================================
+
+SELECT DISTINCT
+    therapeutic_area
 FROM products
-ORDER BY therapeutic_area ;
+ORDER BY therapeutic_area ASC;
 
 
+-- ============================================================
+-- 3. Count products by Rx/OTC type
+-- ============================================================
 
--- 3. Count products by rx_otc type
 SELECT
     rx_otc,
     COUNT(*) AS product_count
 FROM products
-GROUP BY rx_otc;
+GROUP BY rx_otc
+ORDER BY rx_otc ASC;
 
 
-
+-- ============================================================
 -- 4. Find customers located in the Netherlands or Belgium
+-- ============================================================
+
 SELECT
+    customer_id,
     customer_name,
     country_code
 FROM customers
-WHERE country_code IN ('NL', 'BE');
+WHERE country_code IN ('NL', 'BE')
+ORDER BY
+    country_code,
+    customer_name;
 
 
+-- ============================================================
+-- 5. Count orders by order status
+-- ============================================================
 
--- 5. Count orders by order_status
 SELECT
     order_status,
     COUNT(*) AS order_count
 FROM sales_orders
-GROUP BY order_status;
-	
+GROUP BY order_status
+ORDER BY order_status ASC;
+
+
 
 
 -- 6. Find delivered orders that took more than 10 days to deliver
