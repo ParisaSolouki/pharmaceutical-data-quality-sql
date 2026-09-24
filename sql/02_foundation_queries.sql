@@ -74,8 +74,10 @@ ORDER BY order_status ASC;
 
 
 
+-- ============================================================
+-- 6. Find delivered orders that took more than 10 days
+-- ============================================================
 
--- 6. Find delivered orders that took more than 10 days to deliver
 SELECT
     order_id,
     order_date,
@@ -83,23 +85,32 @@ SELECT
     DATEDIFF(delivery_date, order_date) AS delivery_days
 FROM sales_orders
 WHERE order_status = 'Delivered'
-  AND DATEDIFF(delivery_date, order_date) > 10;
+  AND DATEDIFF(delivery_date, order_date) > 10
+ORDER BY delivery_days DESC;
 
 
 
+-- ============================================================
 -- 7. Show batches expiring within 180 days after 2026-01-01
+-- ============================================================
+
 SELECT
     batch_id,
-    lot_number,
+    batch_number,
+    product_id,
     expiry_date
 FROM batches
-WHERE expiry_date BETWEEN '2026-01-01'
-                      AND DATE_ADD('2026-01-01', INTERVAL 180 DAY)
-ORDER BY expiry_date;
+WHERE expiry_date BETWEEN
+    '2026-01-01'
+    AND DATE_ADD('2026-01-01', INTERVAL 180 DAY)
+ORDER BY expiry_date ASC;
 
 
 
+-- ============================================================
 -- 8. Return the five most recently launched products
+-- ============================================================
+
 SELECT
     product_id,
     product_name,
