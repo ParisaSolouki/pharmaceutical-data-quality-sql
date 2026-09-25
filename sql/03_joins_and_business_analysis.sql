@@ -123,7 +123,6 @@ GROUP BY cu.country_code
 ORDER BY total_delivered_revenue DESC;
 
 
-
 -- ============================================================
 -- 15. Find the top three customers by delivered net revenue
 -- ============================================================
