@@ -148,8 +148,10 @@ ORDER BY delivered_net_revenue DESC
 LIMIT 3;
 
 
-
+-- ============================================================
 -- 16. Compare monthly order counts for 2024 and 2025
+-- ============================================================
+
 SELECT
     YEAR(order_date) AS order_year,
     MONTH(order_date) AS order_month,
@@ -160,25 +162,33 @@ GROUP BY
     YEAR(order_date),
     MONTH(order_date)
 ORDER BY
-    order_year,
-    order_month;
+    order_year ASC,
+    order_month ASC;
 
 
+-- ============================================================
+-- 17. Find products sold in countries where registration was not approved
+-- ============================================================
 
--- 17. Find products sold in a country without an approved registration
 SELECT DISTINCT
-    oi.product_id,
-    c.country_code,
+    p.product_id,
+    p.product_name,
+    c.country_code AS sale_country_code,
     pr.registration_status
 FROM order_items AS oi
+INNER JOIN products AS p
+    ON oi.product_id = p.product_id
 INNER JOIN sales_orders AS so
     ON oi.order_id = so.order_id
 INNER JOIN customers AS c
     ON so.customer_id = c.customer_id
 INNER JOIN product_registrations AS pr
     ON oi.product_id = pr.product_id
-    AND c.country_code = pr.country_code
-WHERE pr.registration_status != 'Approved';
+   AND c.country_code = pr.country_code
+WHERE pr.registration_status <> 'Approved'
+ORDER BY
+    p.product_name,
+    c.country_code;
 
 
 
