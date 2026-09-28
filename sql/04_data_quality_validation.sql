@@ -51,16 +51,21 @@ WHERE source_product_id IS NULL
 ORDER BY staging_id;
 
 
-
+-- ============================================================
 -- 21. Find source product IDs missing from the product master
+-- ============================================================
+
 SELECT DISTINCT
-    p.product_id,
     spu.source_product_id
 FROM staging_product_updates AS spu
 LEFT JOIN products AS p
     ON spu.source_product_id = p.product_id
 WHERE spu.source_product_id IS NOT NULL
-  AND p.product_id IS NULL;
+  AND p.product_id IS NULL
+ORDER BY spu.source_product_id;
+
+
+
 
 
 
