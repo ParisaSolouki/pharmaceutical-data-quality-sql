@@ -3,17 +3,25 @@
 -- Section 4: Data Quality Validation
 -- ==========================================================
 
+
+-- ============================================================
+-- SELECT DATABASE
+-- ============================================================
+
 USE pharma_steward_practice;
 
 
+-- ============================================================
+-- 19. Find exact duplicate staging rows
+-- ============================================================
 
--- 19. Find exact duplicate staging rows, excluding staging_id
 SELECT
     source_product_id,
     source_product_name,
     therapeutic_area,
     country_code,
     source_status,
+    loaded_at,
     COUNT(*) AS duplicate_count
 FROM staging_product_updates
 GROUP BY
@@ -21,9 +29,10 @@ GROUP BY
     source_product_name,
     therapeutic_area,
     country_code,
-    source_status
-HAVING COUNT(*) > 1;
-
+    source_status,
+    loaded_at
+HAVING COUNT(*) > 1
+ORDER BY duplicate_count DESC;
 
 
 
