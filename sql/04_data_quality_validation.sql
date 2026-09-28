@@ -81,9 +81,10 @@ WHERE spu.country_code IS NOT NULL
 ORDER BY spu.staging_id;
 
 
-
-
+-- ============================================================
 -- 23. Find inconsistent casing or surrounding spaces
+-- ============================================================
+
 SELECT
     staging_id,
     source_product_name,
@@ -126,28 +127,33 @@ SELECT
 
 FROM staging_product_updates
 
-WHERE
-       CAST(source_product_name AS BINARY)
-       <> CAST(TRIM(source_product_name) AS BINARY)
+WHERE CAST(source_product_name AS BINARY)
+          <> CAST(TRIM(source_product_name) AS BINARY)
 
-    OR CAST(source_product_name AS BINARY)
-       <> CAST(
-              CONCAT(
-                  UPPER(LEFT(TRIM(source_product_name), 1)),
-                  LOWER(SUBSTRING(TRIM(source_product_name), 2))
-              ) AS BINARY
-          )
+   OR CAST(source_product_name AS BINARY)
+          <> CAST(
+                 CONCAT(
+                     UPPER(LEFT(TRIM(source_product_name), 1)),
+                     LOWER(SUBSTRING(TRIM(source_product_name), 2))
+                 ) AS BINARY
+             )
 
-    OR CAST(source_status AS BINARY)
-       <> CAST(TRIM(source_status) AS BINARY)
+   OR CAST(source_status AS BINARY)
+          <> CAST(TRIM(source_status) AS BINARY)
 
-    OR CAST(source_status AS BINARY)
-       <> CAST(
-              CONCAT(
-                  UPPER(LEFT(TRIM(source_status), 1)),
-                  LOWER(SUBSTRING(TRIM(source_status), 2))
-              ) AS BINARY
-          );
+   OR CAST(source_status AS BINARY)
+          <> CAST(
+                 CONCAT(
+                     UPPER(LEFT(TRIM(source_status), 1)),
+                     LOWER(SUBSTRING(TRIM(source_status), 2))
+                 ) AS BINARY
+             )
+
+ORDER BY staging_id;
+
+
+
+
 	
 	
     
