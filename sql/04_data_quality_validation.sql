@@ -152,23 +152,33 @@ WHERE CAST(source_product_name AS BINARY)
 ORDER BY staging_id;
 
 
+-- ============================================================
+-- 24. Compare staging and master product names
+-- ============================================================
 
-
-	
-	
-    
-    
--- 24. Find product-name mismatches between staging and master data
 SELECT
     spu.staging_id,
     spu.source_product_id,
     spu.source_product_name AS staging_product_name,
-    p.product_name AS master_product_name
+    p.product_name AS master_product_name,
+
+    CASE
+        WHEN p.product_id IS NULL
+            THEN 'NO MASTER MATCH'
+
+        WHEN LOWER(TRIM(spu.source_product_name))
+             = LOWER(TRIM(p.product_name))
+            THEN 'MATCH'
+
+        ELSE 'MISMATCH'
+    END AS name_comparison
+
 FROM staging_product_updates AS spu
-INNER JOIN products AS p
+
+LEFT JOIN products AS p
     ON spu.source_product_id = p.product_id
-WHERE LOWER(TRIM(spu.source_product_name))
-      <> LOWER(TRIM(p.product_name));
+
+ORDER BY spu.staging_id;
 
 
 
