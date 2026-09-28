@@ -35,8 +35,10 @@ HAVING COUNT(*) > 1
 ORDER BY duplicate_count DESC;
 
 
+-- ============================================================
+-- 20. Find staging rows with missing required values
+-- ============================================================
 
--- 20. Find staging rows with a missing product ID, therapeutic area, or status
 SELECT
     staging_id,
     source_product_id,
@@ -45,8 +47,8 @@ SELECT
 FROM staging_product_updates
 WHERE source_product_id IS NULL
    OR therapeutic_area IS NULL
-   OR source_status IS NULL;
-
+   OR source_status IS NULL
+ORDER BY staging_id;
 
 
 
