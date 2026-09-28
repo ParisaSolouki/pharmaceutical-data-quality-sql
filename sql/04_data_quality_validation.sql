@@ -181,21 +181,22 @@ LEFT JOIN products AS p
 ORDER BY spu.staging_id;
 
 
+-- ============================================================
+-- 25. Find active staging products discontinued in the master
+-- ============================================================
 
-
--- 25. Find staging records marked Active
--- while the master product is Discontinued
 SELECT
     spu.staging_id,
     spu.source_product_id,
-    spu.source_product_name,
+    p.product_name,
     spu.source_status AS staging_status,
     p.product_status AS master_status
 FROM staging_product_updates AS spu
 INNER JOIN products AS p
     ON spu.source_product_id = p.product_id
 WHERE LOWER(TRIM(spu.source_status)) = 'active'
-  AND p.product_status = 'Discontinued';
+  AND p.product_status = 'Discontinued'
+ORDER BY spu.staging_id;
 
 
 
