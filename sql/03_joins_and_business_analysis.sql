@@ -191,10 +191,11 @@ ORDER BY
     c.country_code;
 
 
+-- ============================================================
+-- 18. Find order items with a product and batch mismatch
+-- ============================================================
 
--- 18. Find order items whose batch belongs to a different product
 SELECT
-    oi.order_id,
     oi.order_item_id,
     oi.batch_id,
     oi.product_id AS ordered_product_id,
@@ -202,5 +203,6 @@ SELECT
 FROM order_items AS oi
 INNER JOIN batches AS b
     ON oi.batch_id = b.batch_id
-WHERE oi.product_id != b.product_id;
+WHERE oi.product_id <> b.product_id
+ORDER BY oi.order_item_id;
 	
