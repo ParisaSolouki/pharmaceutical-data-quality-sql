@@ -65,12 +65,10 @@ WHERE spu.source_product_id IS NOT NULL
 ORDER BY spu.source_product_id;
 
 
-
-
-
-
-
+-- ============================================================
 -- 22. Find invalid country codes in staging data
+-- ============================================================
+
 SELECT
     spu.staging_id,
     spu.country_code AS staging_country_code,
