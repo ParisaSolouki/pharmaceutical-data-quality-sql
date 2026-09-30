@@ -199,16 +199,30 @@ WHERE LOWER(TRIM(spu.source_status)) = 'active'
 ORDER BY spu.staging_id;
 
 
+-- ============================================================
+-- 26. Summarize staging data-quality issues
+-- ============================================================
 
+WITH duplicate_groups AS (
+    SELECT
+        COUNT(*) AS duplicate_count
+    FROM staging_product_updates
+    GROUP BY
+        source_product_id,
+        source_product_name,
+        therapeutic_area,
+        country_code,
+        source_status,
+        loaded_at
+    HAVING COUNT(*) > 1
+)
 
--- 26. Produce a data-quality summary
 SELECT
     COUNT(*) AS total_rows,
 
     SUM(
         CASE
-            WHEN spu.source_product_id IS NULL 
-            THEN 1
+            WHEN spu.source_product_id IS NULL THEN 1
             ELSE 0
         END
     ) AS missing_ids,
@@ -217,7 +231,7 @@ SELECT
         CASE
             WHEN spu.country_code IS NOT NULL
              AND c.country_code IS NULL
-            THEN 1
+                THEN 1
             ELSE 0
         END
     ) AS invalid_countries,
@@ -226,30 +240,17 @@ SELECT
         CASE
             WHEN spu.source_product_id IS NOT NULL
              AND p.product_id IS NULL
-            THEN 1
+                THEN 1
             ELSE 0
         END
     ) AS unknown_products,
 
-    (
-        SELECT
-            COALESCE(
-                SUM(d.duplicate_count - 1),
-                0
-            )
-        FROM (
-            SELECT
-                COUNT(*) AS duplicate_count
-            FROM staging_product_updates
-            GROUP BY
-                source_product_id,
-                source_product_name,
-                therapeutic_area,
-                country_code,
-                source_status,
-                loaded_at
-            HAVING COUNT(*) > 1
-        ) AS d
+    COALESCE(
+        (
+            SELECT SUM(duplicate_count - 1)
+            FROM duplicate_groups
+        ),
+        0
     ) AS duplicate_records
 
 FROM staging_product_updates AS spu
@@ -259,6 +260,15 @@ LEFT JOIN countries AS c
 
 LEFT JOIN products AS p
     ON spu.source_product_id = p.product_id;
+
+
+
+
+
+
+
+
+
 
 
 
