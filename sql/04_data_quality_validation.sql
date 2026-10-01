@@ -295,12 +295,10 @@ SELECT
 FROM staging_product_updates;
 
 
+-- ============================================================
+-- 28. Assign a quality status to each staging row
+-- ============================================================
 
-
-
-
-
--- 28. Assign each staging row a quality status of PASS or FAIL
 SELECT
     spu.staging_id,
     spu.source_product_id,
@@ -311,12 +309,13 @@ SELECT
 
     CASE
         WHEN spu.source_product_id IS NULL
+          OR spu.source_product_name IS NULL
           OR spu.therapeutic_area IS NULL
           OR spu.country_code IS NULL
           OR spu.source_status IS NULL
           OR p.product_id IS NULL
           OR c.country_code IS NULL
-        THEN 'FAIL'
+            THEN 'FAIL'
         ELSE 'PASS'
     END AS quality_status
 
@@ -330,132 +329,3 @@ LEFT JOIN countries AS c
 
 ORDER BY spu.staging_id;
 
-
-
-
--- 29. Create an exception report
--- showing each failed row and its failure reason
-
-SELECT
-    spu.staging_id,
-    spu.source_product_id,
-    spu.source_product_name,
-    spu.therapeutic_area,
-    spu.country_code,
-    spu.source_status,
-
-    'FAIL' AS quality_status,
-
-    CASE
-        WHEN spu.source_product_id IS NULL
-            THEN 'Missing product ID'
-
-        WHEN spu.therapeutic_area IS NULL
-            THEN 'Missing therapeutic area'
-
-        WHEN spu.country_code IS NULL
-            THEN 'Missing country code'
-
-        WHEN spu.source_status IS NULL
-            THEN 'Missing source status'
-
-        WHEN p.product_id IS NULL
-            THEN 'Unknown product ID'
-
-        WHEN c.country_code IS NULL
-            THEN 'Invalid country code'
-    END AS failure_reason
-
-FROM staging_product_updates AS spu
-
-LEFT JOIN products AS p
-    ON spu.source_product_id = p.product_id
-
-LEFT JOIN countries AS c
-    ON spu.country_code = c.country_code
-
-WHERE spu.source_product_id IS NULL
-   OR spu.therapeutic_area IS NULL
-   OR spu.country_code IS NULL
-   OR spu.source_status IS NULL
-   OR p.product_id IS NULL
-   OR c.country_code IS NULL
-
-ORDER BY spu.staging_id;
-
-
-
-
--- 30. Create a detailed exception report
--- showing multiple failure reasons for each staging row
-
-SELECT
-    spu.staging_id,
-    spu.source_product_id,
-    spu.source_product_name,
-    spu.therapeutic_area,
-    spu.country_code,
-    spu.source_status,
-
-    'FAIL' AS quality_status,
-
-    CONCAT_WS(
-        ', ',
-
-        CASE
-            WHEN spu.source_product_id IS NULL
-            THEN 'Missing product ID'
-        END,
-
-        CASE
-            WHEN spu.therapeutic_area IS NULL
-            THEN 'Missing therapeutic area'
-        END,
-
-        CASE
-            WHEN spu.country_code IS NULL
-            THEN 'Missing country code'
-        END,
-
-        CASE
-            WHEN spu.source_status IS NULL
-            THEN 'Missing source status'
-        END,
-
-        CASE
-            WHEN spu.source_product_id IS NOT NULL
-             AND p.product_id IS NULL
-            THEN 'Unknown product ID'
-        END,
-
-        CASE
-            WHEN spu.country_code IS NOT NULL
-             AND c.country_code IS NULL
-            THEN 'Invalid country code'
-        END
-
-    ) AS failure_reasons
-
-FROM staging_product_updates AS spu
-
-LEFT JOIN products AS p
-    ON spu.source_product_id = p.product_id
-
-LEFT JOIN countries AS c
-    ON spu.country_code = c.country_code
-
-WHERE spu.source_product_id IS NULL
-   OR spu.therapeutic_area IS NULL
-   OR spu.country_code IS NULL
-   OR spu.source_status IS NULL
-   OR (
-        spu.source_product_id IS NOT NULL
-        AND p.product_id IS NULL
-   )
-   OR (
-        spu.country_code IS NOT NULL
-        AND c.country_code IS NULL
-   )
-
-ORDER BY spu.staging_id;
-   
