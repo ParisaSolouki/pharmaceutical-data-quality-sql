@@ -262,22 +262,13 @@ LEFT JOIN products AS p
     ON spu.source_product_id = p.product_id;
 
 
+-- ============================================================
+-- 27. Calculate completeness for nullable staging fields
+-- ============================================================
 
-
-
-
-
-
-
-
-
-
-
--- 27. Calculate completeness percentage
--- for each nullable staging field
 SELECT
     ROUND(
-COUNT(source_product_id) * 100.0 / COUNT(*),
+        COUNT(source_product_id) * 100.0 / COUNT(*),
         2
     ) AS product_id_completeness,
 
@@ -302,6 +293,9 @@ COUNT(source_product_id) * 100.0 / COUNT(*),
     ) AS status_completeness
 
 FROM staging_product_updates;
+
+
+
 
 
 
