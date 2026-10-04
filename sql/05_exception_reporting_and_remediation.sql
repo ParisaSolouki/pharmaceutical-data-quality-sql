@@ -1,9 +1,212 @@
--- =========================================================
--- Pharmaceutical Data Quality Analysis
--- Section 5: Exception Reporting and Data Remediation
--- =========================================================
+-- ============================================================
+-- Pharmaceutical Data Quality Analysis with SQL
+-- Section 5: Advanced SQL Challenges
+-- Dataset: Synthetic Pharmaceutical Data
+-- ============================================================
+
+
+-- ============================================================
+-- SELECT DATABASE
+-- ============================================================
 
 USE pharma_steward_practice;
+
+
+-- ============================================================
+-- 29. Find the highest-revenue active Rx product by country
+-- ============================================================
+
+WITH product_revenue AS (
+    SELECT
+        c.country_code,
+        p.product_id,
+        p.product_name,
+
+        SUM(
+            oi.quantity
+            * oi.unit_price
+            * (1 - oi.discount_pct / 100.0)
+        ) AS total_revenue
+
+    FROM sales_orders AS so
+
+    INNER JOIN customers AS c
+        ON so.customer_id = c.customer_id
+
+    INNER JOIN order_items AS oi
+        ON so.order_id = oi.order_id
+
+    INNER JOIN products AS p
+        ON oi.product_id = p.product_id
+
+    WHERE YEAR(so.order_date) = 2025
+      AND p.rx_otc = 'Rx'
+      AND p.product_status = 'Active'
+
+    GROUP BY
+        c.country_code,
+        p.product_id,
+        p.product_name
+),
+
+ranked_products AS (
+    SELECT
+        country_code,
+        product_id,
+        product_name,
+        total_revenue,
+
+        RANK() OVER (
+            PARTITION BY country_code
+            ORDER BY total_revenue DESC
+        ) AS revenue_rank
+
+    FROM product_revenue
+)
+
+SELECT
+    country_code,
+    product_id,
+    product_name,
+    ROUND(total_revenue, 2) AS total_revenue,
+    revenue_rank
+FROM ranked_products
+WHERE revenue_rank = 1
+ORDER BY
+    country_code,
+    product_name;
+
+
+
+
+
+-- 29. Create an exception report
+-- showing each failed row and its failure reason
+
+SELECT
+    spu.staging_id,
+    spu.source_product_id,
+    spu.source_product_name,
+    spu.therapeutic_area,
+    spu.country_code,
+    spu.source_status,
+
+    'FAIL' AS quality_status,
+
+    CASE
+        WHEN spu.source_product_id IS NULL
+            THEN 'Missing product ID'
+
+        WHEN spu.therapeutic_area IS NULL
+            THEN 'Missing therapeutic area'
+
+        WHEN spu.country_code IS NULL
+            THEN 'Missing country code'
+
+        WHEN spu.source_status IS NULL
+            THEN 'Missing source status'
+
+        WHEN p.product_id IS NULL
+            THEN 'Unknown product ID'
+
+        WHEN c.country_code IS NULL
+            THEN 'Invalid country code'
+    END AS failure_reason
+
+FROM staging_product_updates AS spu
+
+LEFT JOIN products AS p
+    ON spu.source_product_id = p.product_id
+
+LEFT JOIN countries AS c
+    ON spu.country_code = c.country_code
+
+WHERE spu.source_product_id IS NULL
+   OR spu.therapeutic_area IS NULL
+   OR spu.country_code IS NULL
+   OR spu.source_status IS NULL
+   OR p.product_id IS NULL
+   OR c.country_code IS NULL
+
+ORDER BY spu.staging_id;
+
+
+
+
+
+   
+-- 30. Create a detailed exception report
+-- showing multiple failure reasons for each staging row
+
+SELECT
+    spu.staging_id,
+    spu.source_product_id,
+    spu.source_product_name,
+    spu.therapeutic_area,
+    spu.country_code,
+    spu.source_status,
+
+    'FAIL' AS quality_status,
+
+    CONCAT_WS(
+        ', ',
+
+        CASE
+            WHEN spu.source_product_id IS NULL
+            THEN 'Missing product ID'
+        END,
+
+        CASE
+            WHEN spu.therapeutic_area IS NULL
+            THEN 'Missing therapeutic area'
+        END,
+
+        CASE
+            WHEN spu.country_code IS NULL
+            THEN 'Missing country code'
+        END,
+
+        CASE
+            WHEN spu.source_status IS NULL
+            THEN 'Missing source status'
+        END,
+
+        CASE
+            WHEN spu.source_product_id IS NOT NULL
+             AND p.product_id IS NULL
+            THEN 'Unknown product ID'
+        END,
+
+        CASE
+            WHEN spu.country_code IS NOT NULL
+             AND c.country_code IS NULL
+            THEN 'Invalid country code'
+        END
+
+    ) AS failure_reasons
+
+FROM staging_product_updates AS spu
+
+LEFT JOIN products AS p
+    ON spu.source_product_id = p.product_id
+
+LEFT JOIN countries AS c
+    ON spu.country_code = c.country_code
+
+WHERE spu.source_product_id IS NULL
+   OR spu.therapeutic_area IS NULL
+   OR spu.country_code IS NULL
+   OR spu.source_status IS NULL
+   OR (
+        spu.source_product_id IS NOT NULL
+        AND p.product_id IS NULL
+   )
+   OR (
+        spu.country_code IS NOT NULL
+        AND c.country_code IS NULL
+   )
+
+ORDER BY spu.staging_id;
 
 
 
