@@ -77,6 +77,150 @@ ORDER BY
     product_name;
 
 
+-- ============================================================
+-- 30. Create a consolidated data-quality exception report
+-- ============================================================
+
+WITH unapproved_sales AS (
+    SELECT
+        oi.order_item_id,
+        oi.order_id,
+        oi.product_id,
+        so.customer_id,
+        cu.country_code,
+        pr.registration_status
+    FROM order_items AS oi
+
+    INNER JOIN sales_orders AS so
+        ON oi.order_id = so.order_id
+
+    INNER JOIN customers AS cu
+        ON so.customer_id = cu.customer_id
+
+    LEFT JOIN product_registrations AS pr
+        ON oi.product_id = pr.product_id
+        AND cu.country_code = pr.country_code
+
+    WHERE pr.registration_status != 'Approved'
+       OR pr.registration_status IS NULL
+),
+
+unsafe_batch_usage AS (
+    SELECT
+        oi.order_item_id,
+        oi.order_id,
+        oi.product_id,
+        oi.batch_id,
+        b.batch_status
+    FROM order_items AS oi
+
+    INNER JOIN batches AS b
+        ON oi.batch_id = b.batch_id
+
+    WHERE b.batch_status IN ('Recalled', 'Quarantined')
+),
+
+inactive_customer_orders AS (
+    SELECT
+        so.order_id,
+        so.customer_id,
+        c.customer_name,
+        c.customer_status
+    FROM sales_orders AS so
+
+    INNER JOIN customers AS c
+        ON so.customer_id = c.customer_id
+
+    WHERE c.customer_status = 'Inactive'
+),
+
+delivered_orders_missing_date AS (
+    SELECT
+        order_id,
+        customer_id,
+        order_status,
+        delivery_date
+    FROM sales_orders
+
+    WHERE order_status = 'Delivered'
+      AND delivery_date IS NULL
+)
+
+SELECT
+    'UNAPPROVED SALE' AS issue_type,
+
+    uas.order_item_id AS record_id,
+
+    CONCAT(
+        'Product ',
+        uas.product_id,
+        ' was sold in ',
+        uas.country_code,
+        ' with registration status: ',
+        COALESCE(uas.registration_status, 'Missing')
+    ) AS detail
+
+FROM unapproved_sales AS uas
+
+UNION ALL
+
+SELECT
+    'RECALLED OR QUARANTINED BATCH' AS issue_type,
+
+    ubu.order_item_id AS record_id,
+
+    CONCAT(
+        'Batch ',
+        ubu.batch_id,
+        ' with status ',
+        ubu.batch_status,
+        ' was used for product ',
+        ubu.product_id,
+        ' in order ',
+        ubu.order_id
+    ) AS detail
+
+FROM unsafe_batch_usage AS ubu
+
+UNION ALL
+
+SELECT
+    'INACTIVE CUSTOMER ORDER' AS issue_type,
+
+    ico.order_id AS record_id,
+
+    CONCAT(
+        'Order ',
+        ico.order_id,
+        ' was placed by inactive customer ',
+        ico.customer_id,
+        ' - ',
+        ico.customer_name
+    ) AS detail
+
+FROM inactive_customer_orders AS ico
+
+UNION ALL
+
+SELECT
+    'MISSING DELIVERY DATE' AS issue_type,
+
+    dod.order_id AS record_id,
+
+    CONCAT(
+        'Order ',
+        dod.order_id,
+        ' is marked as Delivered but has no delivery date'
+    ) AS detail
+
+FROM delivered_orders_missing_date AS dod
+
+ORDER BY
+    issue_type,
+    record_id;
+
+
+
 
 
 
