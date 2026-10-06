@@ -353,19 +353,15 @@ LEFT JOIN countries AS c
 ORDER BY spu.staging_id;
 	
 
-
-
-
--- 34. Summarize the number and percentage
--- of records assigned to each remediation action
+-- ============================================================
+-- 34. Summarize remediation actions by count and percentage
+-- ============================================================
 
 WITH remediation_results AS (
-
     SELECT
         spu.staging_id,
 
         CASE
-            -- Missing or invalid reference data
             WHEN spu.source_product_id IS NULL
               OR spu.source_product_name IS NULL
               OR spu.therapeutic_area IS NULL
@@ -373,38 +369,20 @@ WITH remediation_results AS (
               OR spu.source_status IS NULL
               OR p.product_id IS NULL
               OR c.country_code IS NULL
-            THEN 'MANUAL REVIEW'
+                THEN 'MANUAL REVIEW'
 
-            -- Product name differs from master
-            WHEN CAST(TRIM(spu.source_product_name) AS BINARY)
+            WHEN CAST(spu.source_product_name AS BINARY)
                  <> CAST(p.product_name AS BINARY)
-            THEN 'STANDARDIZE'
 
-            -- Therapeutic area differs from master
-            WHEN CAST(TRIM(spu.therapeutic_area) AS BINARY)
+              OR CAST(spu.therapeutic_area AS BINARY)
                  <> CAST(p.therapeutic_area AS BINARY)
-            THEN 'STANDARDIZE'
 
-            -- Status contains spaces or inconsistent casing
-            WHEN CAST(spu.source_status AS BINARY)
-                 <> CAST(
-                        CONCAT(
-                            UPPER(
-                                LEFT(
-                                    TRIM(spu.source_status),
-                                    1
-                                )
-                            ),
-                            LOWER(
-                                SUBSTRING(
-                                    TRIM(spu.source_status),
-                                    2
-                                )
-                            )
-                        )
-                        AS BINARY
-                    )
-            THEN 'STANDARDIZE'
+              OR CAST(spu.source_status AS BINARY)
+                 <> CAST(p.product_status AS BINARY)
+
+              OR CAST(spu.country_code AS BINARY)
+                 <> CAST(c.country_code AS BINARY)
+                THEN 'STANDARDIZE'
 
             ELSE 'ACCEPT'
         END AS remediation_action
@@ -436,7 +414,9 @@ FROM remediation_results
 
 GROUP BY remediation_action
 
-ORDER BY record_count DESC;	
+ORDER BY record_count DESC;
+
+
 
 
 
