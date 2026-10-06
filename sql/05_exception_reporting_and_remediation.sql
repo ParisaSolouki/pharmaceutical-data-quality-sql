@@ -304,10 +304,9 @@ LEFT JOIN products AS p
 ORDER BY spu.staging_id;
 
 
-
-
--- 33. Assign a recommended remediation action
--- to each staging record
+-- ============================================================
+-- 33. Assign a remediation action to each staging record
+-- ============================================================
 
 SELECT
     spu.staging_id,
@@ -318,7 +317,6 @@ SELECT
     spu.source_status,
 
     CASE
-        -- Missing or invalid reference data
         WHEN spu.source_product_id IS NULL
           OR spu.source_product_name IS NULL
           OR spu.therapeutic_area IS NULL
@@ -326,28 +324,20 @@ SELECT
           OR spu.source_status IS NULL
           OR p.product_id IS NULL
           OR c.country_code IS NULL
-        THEN 'MANUAL REVIEW'
+            THEN 'MANUAL REVIEW'
 
-        -- Product name differs from the master value
-        WHEN CAST(TRIM(spu.source_product_name) AS BINARY)
+        WHEN CAST(spu.source_product_name AS BINARY)
              <> CAST(p.product_name AS BINARY)
-        THEN 'STANDARDIZE'
 
-        -- Therapeutic area differs from the master value
-        WHEN CAST(TRIM(spu.therapeutic_area) AS BINARY)
+          OR CAST(spu.therapeutic_area AS BINARY)
              <> CAST(p.therapeutic_area AS BINARY)
-        THEN 'STANDARDIZE'
 
-        -- Status has spaces or inconsistent casing
-        WHEN CAST(spu.source_status AS BINARY)
-             <> CAST(
-                    CONCAT(
-                        UPPER(LEFT(TRIM(spu.source_status), 1)),
-                        LOWER(SUBSTRING(TRIM(spu.source_status), 2))
-                    )
-                    AS BINARY
-                )
-        THEN 'STANDARDIZE'
+          OR CAST(spu.source_status AS BINARY)
+             <> CAST(p.product_status AS BINARY)
+
+          OR CAST(spu.country_code AS BINARY)
+             <> CAST(c.country_code AS BINARY)
+            THEN 'STANDARDIZE'
 
         ELSE 'ACCEPT'
     END AS remediation_action
