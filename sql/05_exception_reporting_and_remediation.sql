@@ -260,21 +260,21 @@ FROM staging_product_updates
 ORDER BY staging_id;
 
 
-
-
--- 32. Review all staging products and suggest
--- master values where a valid product match exists
+-- ============================================================
+-- 32. Create master-data suggestions for matched staging products
+-- ============================================================
 
 SELECT
     spu.staging_id,
     spu.source_product_id,
+    p.product_id AS master_product_id,
 
     spu.source_product_name AS staging_product_name,
     p.product_name AS master_product_name,
 
     CASE
         WHEN p.product_id IS NOT NULL
-        THEN p.product_name
+            THEN p.product_name
         ELSE NULL
     END AS suggested_product_name,
 
@@ -283,9 +283,18 @@ SELECT
 
     CASE
         WHEN p.product_id IS NOT NULL
-        THEN p.therapeutic_area
+            THEN p.therapeutic_area
         ELSE NULL
-    END AS suggested_therapeutic_area
+    END AS suggested_therapeutic_area,
+
+    spu.source_status AS staging_status,
+    p.product_status AS master_product_status,
+
+    CASE
+        WHEN p.product_id IS NOT NULL
+            THEN p.product_status
+        ELSE NULL
+    END AS suggested_product_status
 
 FROM staging_product_updates AS spu
 
