@@ -2,9 +2,11 @@
 
 ## Project Overview
 
-This project demonstrates an end-to-end SQL-based data quality and data stewardship workflow using a synthetic pharmaceutical database.
+This project presents an end-to-end SQL-based data quality and data stewardship workflow using a synthetic pharmaceutical database.
 
-The project covers database exploration, business analysis, data profiling, validation, master-data comparison, exception reporting, and remediation recommendations.
+The analysis covers database exploration, relational and business analysis, data profiling, validation, master-data comparison, exception reporting, and remediation recommendations.
+
+The project demonstrates how incoming staging data can be evaluated against trusted master and reference data before being accepted into a controlled data environment.
 
 > All company names, product names, and records used in this project are fictional. This project does not contain internal data from any company.
 
@@ -16,9 +18,10 @@ The project covers database exploration, business analysis, data profiling, vali
 - Identify missing, duplicate, inconsistent, unknown, and invalid values
 - Compare staging data with trusted master and reference data
 - Define and apply data-quality validation rules
-- Calculate data completeness metrics
-- Produce detailed exception reports
-- Assign remediation actions to problematic records
+- Calculate field-level completeness metrics
+- Assign record-level quality statuses
+- Produce consolidated exception reports
+- Recommend remediation actions for problematic records
 - Create a final data-quality remediation report
 
 ## Database
@@ -34,9 +37,13 @@ The database contains eight tables:
 - `product_registrations`
 - `staging_product_updates`
 
-The `products` and `countries` tables are used as trusted master and reference data.
+The `products` table represents trusted product master data.
 
-The `staging_product_updates` table contains incoming product records that require validation before they can be accepted into the master-data environment.
+The `countries` table provides trusted country reference data.
+
+The `staging_product_updates` table contains incoming product records that must be validated before they can be accepted into the master-data environment.
+
+The remaining tables provide customer, order, sales, registration, and batch information for business analysis and operational data-quality controls.
 
 ## Entity Relationship Diagram
 
@@ -67,6 +74,20 @@ pharmaceutical-data-quality-sql/
 └── README.md
 ```
 
+## Project Workflow
+
+The project follows this data-quality workflow:
+
+1. Create the database and load synthetic data
+2. Explore the tables, columns, and relationships
+3. Analyze operational and transactional data
+4. Profile the incoming staging dataset
+5. Validate staging values against business rules
+6. Compare staging records with master and reference data
+7. Identify data-quality exceptions
+8. Assign remediation actions
+9. Produce a final record-level remediation report
+
 ## SQL Analysis Sections
 
 ### 1. Database Setup
@@ -82,8 +103,8 @@ This script:
 - Creates the pharmaceutical database
 - Creates the eight project tables
 - Defines primary and foreign keys
-- Inserts synthetic master, transactional, and staging data
-- Introduces intentional data-quality issues for validation exercises
+- Inserts synthetic master, reference, transactional, and staging data
+- Introduces intentional data-quality issues for validation and remediation scenarios
 
 ### 2. Data Exploration
 
@@ -93,16 +114,17 @@ File:
 sql/01_data_exploration.sql
 ```
 
-This section includes:
+This analysis includes:
 
-- Reviewing the available tables
+- Reviewing the available database tables
 - Inspecting table structures with `DESCRIBE`
 - Previewing sample records
-- Counting table rows
-- Reviewing key columns and relationships
-- Identifying initial potential data-quality issues
+- Creating a row-count inventory
+- Reviewing important columns
+- Understanding table relationships
+- Identifying initial potential data-quality concerns
 
-### 3. Foundation SQL Queries
+### 3. Core SQL Analysis
 
 File:
 
@@ -110,19 +132,18 @@ File:
 sql/02_foundation_queries.sql
 ```
 
-This section demonstrates:
+This analysis includes:
 
-- Filtering records with `WHERE`
-- Combining conditions with `AND` and `IN`
-- Sorting results with `ORDER BY`
-- Removing duplicate values with `DISTINCT`
-- Aggregating records with `COUNT`
-- Grouping results with `GROUP BY`
-- Calculating date differences with `DATEDIFF`
-- Creating date ranges with `DATE_ADD` and `BETWEEN`
-- Limiting results with `LIMIT`
+- Filtering and sorting operational records
+- Reviewing distinct pharmaceutical attributes
+- Aggregating products by prescription type
+- Aggregating orders by status
+- Filtering customers by country
+- Analyzing order-delivery durations
+- Identifying batches within defined expiry windows
+- Reviewing recently launched products
 
-### 4. JOIN and Business Analysis
+### 4. Relational and Business Analysis
 
 File:
 
@@ -130,20 +151,23 @@ File:
 sql/03_joins_and_business_analysis.sql
 ```
 
-This section includes:
+This analysis includes:
 
 - Enriching customer data with country information
 - Reviewing product registrations by country
 - Identifying products without approved registrations
-- Calculating gross and net sales values
+- Calculating gross sales values
+- Calculating net revenue after discounts
 - Calculating net revenue by product
 - Calculating delivered revenue by country
 - Identifying the highest-value customers
 - Comparing monthly order volumes
 - Comparing product sales with registration status
-- Linking order items with product and batch data
+- Detecting sales in countries without approved registration
+- Linking order items with batch records
+- Detecting product and batch inconsistencies
 
-### 5. Data Quality Validation
+### 5. Data Quality Assessment and Validation
 
 File:
 
@@ -151,9 +175,9 @@ File:
 sql/04_data_quality_validation.sql
 ```
 
-This section validates the staging dataset for:
+This section evaluates the staging dataset for:
 
-- Duplicate records
+- Exact duplicate records
 - Missing mandatory values
 - Unknown product identifiers
 - Invalid country codes
@@ -162,10 +186,10 @@ This section validates the staging dataset for:
 - Product-name differences between staging and master data
 - Therapeutic-area differences
 - Product-status inconsistencies
-- Column completeness percentages
-- Record-level data-quality issues
+- Field-level completeness percentages
+- Record-level quality statuses
 
-### 6. Exception Reporting and Remediation
+### 6. Exception Reporting and Data Remediation
 
 File:
 
@@ -175,17 +199,37 @@ sql/05_exception_reporting_and_remediation.sql
 
 This section includes:
 
-- Creating cleaned previews without changing source data
+- Ranking products by revenue within each country
+- Identifying the highest-revenue active Rx products
+- Producing a consolidated operational exception report
+- Identifying unapproved product sales
+- Identifying recalled or quarantined batches used in orders
+- Identifying orders placed by inactive customers
+- Identifying delivered orders with missing delivery dates
+- Creating cleaned staging-data previews without changing source data
 - Displaying staging and master values side by side
-- Suggesting standardized product values
-- Creating detailed exception descriptions
+- Suggesting standardized values from trusted master data
+- Creating detailed data-quality issue descriptions
 - Assigning remediation actions
 - Summarizing remediation counts and percentages
 - Producing a final record-level remediation report
 
+## Data-Quality Dimensions
+
+The project evaluates several data-quality dimensions:
+
+| Dimension | Description |
+|---|---|
+| Completeness | Required values must not be missing |
+| Validity | Values must exist in trusted master or reference data |
+| Consistency | Staging values must agree with corresponding master values |
+| Uniqueness | Duplicate incoming records must be identified |
+| Conformity | Text values must follow consistent formatting standards |
+| Integrity | Relationships between products, orders, registrations, and batches must remain valid |
+
 ## Data-Quality Rules
 
-The project applies the following data-quality rules:
+The project applies the following validation rules:
 
 | Rule | Validation |
 |---|---|
@@ -198,8 +242,12 @@ The project applies the following data-quality rules:
 | Country validity | Country code must exist in the `countries` reference table |
 | Product-name consistency | Staging product name must match the master product name |
 | Therapeutic-area consistency | Staging therapeutic area must match the master value |
-| Status formatting | Status values must follow a consistent text format |
+| Product-status consistency | Staging status must be consistent with the master status |
+| Text conformity | Text values must follow consistent capitalization and spacing |
 | Record uniqueness | Duplicate staging records must be identified |
+| Registration compliance | Products sold in a country must have an approved registration |
+| Batch integrity | The batch product must match the ordered product |
+| Delivery completeness | Delivered orders must contain a delivery date |
 
 ## Remediation Actions
 
@@ -208,8 +256,12 @@ Each staging record is assigned one of three remediation actions:
 | Remediation action | Meaning |
 |---|---|
 | `ACCEPT` | The record satisfies the defined data-quality rules |
-| `STANDARDIZE` | The record is valid but requires formatting or master-data standardization |
-| `MANUAL REVIEW` | The record contains missing, unknown, or invalid reference data |
+| `STANDARDIZE` | The record is valid but requires formatting or alignment with master data |
+| `MANUAL REVIEW` | The record contains missing, unknown, or invalid reference data and requires investigation |
+
+The remediation rules are applied in priority order.
+
+Records with missing or invalid reference information are assigned to `MANUAL REVIEW` before formatting differences are considered.
 
 ## Key Results
 
@@ -234,14 +286,43 @@ Examples of detected issues include:
 - Duplicate staging records
 - Differences between staging and master data
 
+The final remediation report displays:
+
+- Original staging values
+- Corresponding master and reference values
+- Identified data-quality issues
+- Recommended remediation actions
+
+## Operational Exception Reporting
+
+The project also produces a consolidated exception report for operational risks.
+
+The report combines the following issue types:
+
+- Product sold without an approved registration
+- Recalled or quarantined batch used in an order
+- Inactive customer associated with an order
+- Delivered order with a missing delivery date
+
+Each exception includes:
+
+- `issue_type`
+- `record_id`
+- A short descriptive detail field
+
 ## Key SQL Techniques
 
 The project uses:
 
 - `INNER JOIN`
 - `LEFT JOIN`
+- `UNION ALL`
 - `CASE`
-- Common Table Expressions (`CTE`)
+- Common Table Expressions
+- Window functions
+- `RANK`
+- `OVER`
+- `PARTITION BY`
 - Conditional aggregation
 - Scalar subqueries
 - `GROUP BY`
@@ -260,19 +341,29 @@ The project uses:
 - `LEFT`
 - `SUBSTRING`
 - `CAST`
-- Date functions
-- Master-data and reference-data validation
+- `YEAR`
+- `MONTH`
+- `DATEDIFF`
+- `DATE_ADD`
+- `BETWEEN`
+- Master-data validation
+- Reference-data validation
 
 ## How to Run the Project
 
-1. Open MySQL or DBeaver.
-2. Run the database setup script:
+### Step 1: Create the database
+
+Open MySQL or DBeaver and run:
 
 ```text
 sql/00_database_setup.sql
 ```
 
-3. Run the remaining SQL files in numerical order:
+This creates the database, tables, relationships, and synthetic records.
+
+### Step 2: Run the analysis files
+
+Run the remaining SQL files in numerical order:
 
 ```text
 sql/01_data_exploration.sql
@@ -282,18 +373,30 @@ sql/04_data_quality_validation.sql
 sql/05_exception_reporting_and_remediation.sql
 ```
 
+### Step 3: Review the results
+
+Review the result sets produced by each section, particularly:
+
+- Business-analysis results
+- Staging-data validation results
+- Completeness metrics
+- Operational exception reports
+- Remediation summaries
+- The final record-level remediation report
+
 ## Project Status
 
 Completed.
 
-The project now includes:
+The project includes:
 
-- Database setup
+- Database design and setup
 - Data exploration
-- Foundational SQL analysis
-- JOIN and business analysis
-- Data-quality validation
+- Core SQL analysis
+- Relational and business analysis
+- Advanced revenue analysis
+- Data-quality assessment
 - Master-data comparison
-- Exception reporting
+- Reference-data validation
+- Operational exception reporting
 - Remediation recommendations
-- Final remediation reporting
