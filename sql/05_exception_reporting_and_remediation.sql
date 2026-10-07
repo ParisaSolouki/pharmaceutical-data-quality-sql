@@ -417,13 +417,9 @@ GROUP BY remediation_action
 ORDER BY record_count DESC;
 
 
-
-
-
-
-
-
--- 35. Create the final data-quality remediation report
+-- ============================================================
+-- 35. Create the final data remediation report
+-- ============================================================
 
 WITH remediation_report AS (
 
@@ -431,23 +427,20 @@ WITH remediation_report AS (
         spu.staging_id,
         spu.source_product_id,
 
-        -- Staging and master product values
         spu.source_product_name AS staging_product_name,
         p.product_name AS master_product_name,
 
         spu.therapeutic_area AS staging_therapeutic_area,
         p.therapeutic_area AS master_therapeutic_area,
 
-        -- Staging and master country values
         spu.country_code AS staging_country_code,
         c.country_code AS master_country_code,
         c.country_name AS master_country_name,
 
-        -- Staging and master status values
         spu.source_status AS staging_status,
         p.product_status AS master_product_status,
 
-        -- List all detected data-quality issues
+        -- Combine all detected issues into one column
         COALESCE(
             NULLIF(
                 CONCAT_WS(
@@ -475,7 +468,7 @@ WITH remediation_report AS (
 
                     CASE
                         WHEN spu.source_status IS NULL
-                        THEN 'Missing source status'
+                        THEN 'Missing product status'
                     END,
 
                     CASE
@@ -492,54 +485,26 @@ WITH remediation_report AS (
 
                     CASE
                         WHEN p.product_id IS NOT NULL
-                         AND CAST(
-                                TRIM(spu.source_product_name)
-                                AS BINARY
-                             )
-                             <> CAST(
-                                    p.product_name
-                                    AS BINARY
-                                )
-                        THEN 'Product name mismatch'
+                         AND spu.source_product_name IS NOT NULL
+                         AND CAST(spu.source_product_name AS BINARY)
+                             <> CAST(p.product_name AS BINARY)
+                        THEN 'Product name differs from master'
                     END,
 
                     CASE
                         WHEN p.product_id IS NOT NULL
-                         AND CAST(
-                                TRIM(spu.therapeutic_area)
-                                AS BINARY
-                             )
-                             <> CAST(
-                                    p.therapeutic_area
-                                    AS BINARY
-                                )
-                        THEN 'Therapeutic area mismatch'
+                         AND spu.therapeutic_area IS NOT NULL
+                         AND CAST(spu.therapeutic_area AS BINARY)
+                             <> CAST(p.therapeutic_area AS BINARY)
+                        THEN 'Therapeutic area differs from master'
                     END,
 
                     CASE
-                        WHEN spu.source_status IS NOT NULL
-                         AND CAST(
-                                spu.source_status
-                                AS BINARY
-                             )
-                             <> CAST(
-                                    CONCAT(
-                                        UPPER(
-                                            LEFT(
-                                                TRIM(spu.source_status),
-                                                1
-                                            )
-                                        ),
-                                        LOWER(
-                                            SUBSTRING(
-                                                TRIM(spu.source_status),
-                                                2
-                                            )
-                                        )
-                                    )
-                                    AS BINARY
-                                )
-                        THEN 'Status format issue'
+                        WHEN p.product_id IS NOT NULL
+                         AND spu.source_status IS NOT NULL
+                         AND CAST(spu.source_status AS BINARY)
+                             <> CAST(p.product_status AS BINARY)
+                        THEN 'Product status differs from master'
                     END
                 ),
                 ''
@@ -558,47 +523,12 @@ WITH remediation_report AS (
               OR c.country_code IS NULL
             THEN 'MANUAL REVIEW'
 
-            WHEN CAST(
-                    TRIM(spu.source_product_name)
-                    AS BINARY
-                 )
-                 <> CAST(
-                        p.product_name
-                        AS BINARY
-                    )
-            THEN 'STANDARDIZE'
-
-            WHEN CAST(
-                    TRIM(spu.therapeutic_area)
-                    AS BINARY
-                 )
-                 <> CAST(
-                        p.therapeutic_area
-                        AS BINARY
-                    )
-            THEN 'STANDARDIZE'
-
-            WHEN CAST(
-                    spu.source_status
-                    AS BINARY
-                 )
-                 <> CAST(
-                        CONCAT(
-                            UPPER(
-                                LEFT(
-                                    TRIM(spu.source_status),
-                                    1
-                                )
-                            ),
-                            LOWER(
-                                SUBSTRING(
-                                    TRIM(spu.source_status),
-                                    2
-                                )
-                            )
-                        )
-                        AS BINARY
-                    )
+            WHEN CAST(spu.source_product_name AS BINARY)
+                     <> CAST(p.product_name AS BINARY)
+              OR CAST(spu.therapeutic_area AS BINARY)
+                     <> CAST(p.therapeutic_area AS BINARY)
+              OR CAST(spu.source_status AS BINARY)
+                     <> CAST(p.product_status AS BINARY)
             THEN 'STANDARDIZE'
 
             ELSE 'ACCEPT'
